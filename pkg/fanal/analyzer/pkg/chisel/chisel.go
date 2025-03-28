@@ -12,6 +12,7 @@ import (
 	"github.com/aquasecurity/trivy/pkg/fanal/analyzer"
 	"github.com/aquasecurity/trivy/pkg/fanal/analyzer/pkg/chisel/jsonwall"
 	"github.com/aquasecurity/trivy/pkg/fanal/types"
+	"github.com/aquasecurity/trivy/pkg/log"
 )
 
 func init() {
@@ -23,7 +24,9 @@ const (
 	chiselManifestFile = "var/lib/chisel/manifest.wall"
 )
 
-type chiselPkgAnalyzer struct{}
+type chiselPkgAnalyzer struct {
+	logger *log.Logger
+}
 
 type ChiselPackage struct {
 	Kind    string `json:"kind"`
@@ -40,7 +43,9 @@ type ChiselContent struct {
 }
 
 func newChiselPkgAnalyzer(_ analyzer.AnalyzerOptions) (analyzer.PostAnalyzer, error) {
-	return &chiselPkgAnalyzer{}, nil
+	return &chiselPkgAnalyzer{
+		logger: log.WithPrefix("chisel"),
+	}, nil
 }
 
 func (a chiselPkgAnalyzer) PostAnalyze(ctx context.Context, input analyzer.PostAnalysisInput) (*analyzer.AnalysisResult, error) {
@@ -49,7 +54,7 @@ func (a chiselPkgAnalyzer) PostAnalyze(ctx context.Context, input analyzer.PostA
 		return nil, err
 	}
 
-	packages, err := getPackages(db)
+	packages, err := a.getPackages(db)
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +103,7 @@ func loadManifest(manifestPath string, input analyzer.PostAnalysisInput) (*jsonw
 	return db, nil
 }
 
-func getPackages(db *jsonwall.DB) (packages []types.Package, err error) {
+func (a chiselPkgAnalyzer) getPackages(db *jsonwall.DB) (packages []types.Package, err error) {
 	packagesIterator, err := db.Iterate(&ChiselPackage{Kind: "package"})
 	if err != nil {
 		return nil, err
@@ -124,7 +129,7 @@ func getPackages(db *jsonwall.DB) (packages []types.Package, err error) {
 
 		pkg.InstalledFiles = installedFiles
 
-		if err := setVersion(&pkg); err != nil {
+		if err := a.setVersion(&pkg); err != nil {
 			return nil, err
 		}
 
@@ -151,8 +156,9 @@ func getInstalledFiles(db *jsonwall.DB, pkg string) (installedFiles []string, er
 	return installedFiles, nil
 }
 
-func setVersion(pkg *types.Package) error {
-	v, err := debVersion.NewVersion(pkg.Version)
+func (a chiselPkgAnalyzer) setVersion(pkg *types.Package) error {
+	pkgVersion := pkg.Version
+	v, err := debVersion.NewVersion(pkgVersion)
 	if err != nil {
 		return err
 	}
@@ -161,6 +167,23 @@ func setVersion(pkg *types.Package) error {
 	pkg.Version = v.Version()
 	pkg.Epoch = v.Epoch()
 	pkg.Release = v.Revision()
+
+	if pkg.SrcName == "" {
+		pkg.SrcName = pkg.Name
+	}
+	if pkg.SrcVersion == "" {
+		pkg.SrcVersion = pkgVersion
+	}
+
+	if v, err := debVersion.NewVersion(pkg.SrcVersion); err != nil {
+		a.logger.Warn("Invalid source version", log.String("OS", "ubuntu"),
+			log.String("package", pkg.Name), log.String("version", pkg.SrcVersion))
+		return nil
+	} else {
+		pkg.SrcVersion = v.Version()
+		pkg.SrcEpoch = v.Epoch()
+		pkg.SrcRelease = v.Revision()
+	}
 
 	return nil
 }
