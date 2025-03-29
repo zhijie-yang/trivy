@@ -1,7 +1,6 @@
 package chisel
 
 import (
-	"context"
 	"io"
 	"io/fs"
 	"os"
@@ -308,7 +307,7 @@ func Test_chiselAnalyzer_Analyze(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			a, err := newChiselPkgAnalyzer(analyzer.AnalyzerOptions{})
 			require.NoError(t, err)
-			ctx := context.Background()
+			ctx := t.Context()
 
 			mfs := mapfs.New()
 			for testPath, osPath := range tt.testFiles {
