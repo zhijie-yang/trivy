@@ -430,6 +430,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sso v1.25.1 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.29.1 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.33.17 // indirect
+	github.com/canonical/chisel v1.1.1-0.20250328150922-a2320fbcd24c // indirect
 	github.com/evanphx/json-patch/v5 v5.6.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect
 	github.com/google/go-github/v31 v31.0.0 // indirect

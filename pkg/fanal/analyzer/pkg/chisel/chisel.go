@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/canonical/chisel/public/jsonwall"
 	"github.com/klauspost/compress/zstd"
 	debVersion "github.com/knqyf263/go-deb-version"
 
 	"github.com/aquasecurity/trivy/pkg/digest"
 	"github.com/aquasecurity/trivy/pkg/fanal/analyzer"
-	"github.com/aquasecurity/trivy/pkg/fanal/analyzer/pkg/chisel/jsonwall"
 	"github.com/aquasecurity/trivy/pkg/fanal/types"
 	"github.com/aquasecurity/trivy/pkg/log"
 )
